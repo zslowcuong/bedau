@@ -11,6 +11,7 @@
             font-family: 'Quicksand', sans-serif;
             overflow-x: hidden;
             background: linear-gradient(135deg, #fff0f5 0%, #fff 100%);
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="pink"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>'), auto;
         }
 
         /* Hiệu ứng trôi nổi cho các icon nền */
@@ -54,173 +55,430 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Nút chạy trốn */
-        #btnNo {
-            transition: all 0.2s ease;
-            position: relative; 
+        /* Nút nhạc xoay xoay */
+        .music-spin {
+            animation: spin 3s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
-        .envelope-container {
-            perspective: 1000px;
+        /* Hiệu ứng rung lắc (khi dỗi) */
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        /* Bong bóng chat */
+        .speech-bubble {
+            position: absolute;
+            background: #fff;
+            border-radius: .4em;
+            padding: 5px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ec4899;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-top-color: #fff;
+            border-bottom: 0;
+            margin-left: -8px;
+            margin-bottom: -8px;
+        }
+
+        /* Hiệu ứng thú cưng chạy bên dưới */
+        .running-pet-container {
+            position: fixed;
+            bottom: 10px;
+            width: 100%;
+            height: 50px;
+            pointer-events: none;
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        .running-pet {
+            position: absolute;
+            font-size: 30px;
+            animation: runAcross 15s linear infinite;
+            bottom: 0;
+        }
+
+        .running-pet.delay {
+            animation-delay: 7s;
+            opacity: 0;
+        }
+
+        @keyframes runAcross {
+            0% { left: -50px; opacity: 1; transform: scaleX(1); }
+            45% { left: 45%; transform: scaleX(1); }
+            50% { left: 50%; transform: scaleX(1) translateY(-10px); } /* Nhảy lên một cái */
+            55% { left: 55%; transform: scaleX(1) translateY(0); }
+            100% { left: 100%; transform: scaleX(1); opacity: 1; }
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center relative">
+<body class="min-h-screen flex items-center justify-center relative py-10">
 
-    <!-- Container hiệu ứng nền (Trái tim và Đậu) -->
+    <!-- DÁN LINK NHẠC "I DO (ĐỨC PHÚC)" VÀO DÒNG DƯỚI ĐÂY -->
+    <!-- Mẹo: Dùng link nhạc online ổn định để tự phát mượt hơn -->
+    <audio id="bgMusic" loop>
+        <source src="https://files.catbox.moe/2kyrms.mp3">
+    </audio>
+
+    <!-- Nút bật/tắt nhạc -->
+    <button onclick="manualToggleMusic()" id="musicBtn" class="fixed top-4 right-4 z-50 bg-white/80 backdrop-blur p-3 rounded-full shadow-md text-pink-500 hover:text-pink-600 transition-all transform hover:scale-110 border border-pink-200">
+        <svg id="musicIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+    </button>
+
+    <!-- Container hiệu ứng nền -->
     <div id="background-effects" class="fixed inset-0 pointer-events-none overflow-hidden"></div>
 
+    <!-- Thú cưng chạy loăng quăng -->
+    <div class="running-pet-container">
+        <div class="running-pet">🐈 <span class="text-xs text-gray-400">Đi tìm Bé Đậu...</span></div>
+        <div class="running-pet delay">🐕 <span class="text-xs text-gray-400">Tha lỗi cho anh đi...</span></div>
+    </div>
+
     <!-- Nội dung chính -->
-    <div class="relative z-10 w-full max-w-md p-4">
+    <div class="relative z-10 w-full max-w-2xl p-4"> <!-- Tăng chiều rộng lên max-w-2xl -->
         
         <!-- Card Chính -->
-        <div class="bg-white/80 backdrop-blur-md border-2 border-pink-100 rounded-3xl shadow-2xl p-8 text-center fade-in-up transform hover:scale-[1.01] transition-transform duration-300">
+        <div class="bg-white/90 backdrop-blur-md border-4 border-double border-pink-200 rounded-[40px] shadow-2xl p-6 md:p-12 text-center fade-in-up transform hover:scale-[1.005] transition-transform duration-500">
             
             <!-- Avatar / Icon cute -->
-            <div class="w-32 h-32 mx-auto mb-4 bg-pink-100 rounded-full flex items-center justify-center shadow-inner overflow-hidden border-4 border-white">
-                <!-- 
-                     Mình đã để tạm ảnh hoạt hình cute. 
-                     Nếu bạn có link ảnh mới từ imgbb.com, hãy thay vào trong src="..." nhé.
-                     Đoạn onerror giúp nếu ảnh lỗi thì nó sẽ tự hiện ảnh dự phòng chứ không bị trắng trơn.
-                -->
+            <div id="avatar-container" class="w-48 h-48 mx-auto mb-6 bg-pink-50 rounded-full flex items-center justify-center shadow-lg overflow-visible border-4 border-white ring-4 ring-pink-100 relative group transition-transform duration-200">
+                
+                <!-- Bong bóng thoại (Ban đầu ẩn) -->
+                <div id="speech-bubble" class="speech-bubble">Đừng bấm nút đóooo! 🥺</div>
+
+                <!-- DÁN LINK ẢNH BÉ ĐẬU VÀO DÒNG DƯỚI ĐÂY -->
                 <img 
-                    src="https://ibb.co/Q3vcfd8q" 
-                    onerror="this.src='https://ibb.co/Q3vcfd8q'"
+                    src="https://sf-static.upanhlaylink.com/img/image_202512041289ee9e49771d6a842424269d252637.jpg" 
+                    onerror="this.src='https://placehold.co/150x150/pink/white?text=Be+Dau'"
                     alt="Ảnh Bé Đậu" 
-                    class="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                    class="w-full h-full object-cover rounded-full group-hover:scale-110 transition-transform duration-500 overflow-hidden cursor-pointer"
+                    onclick="spawnHearts(event)"
                 >
+                
+                <div class="absolute -bottom-2 -right-2 bg-white p-2 rounded-full shadow text-xl animate-bounce">🌱</div>
             </div>
 
-            <h1 class="text-3xl font-bold text-pink-600 mb-2">Gửi Phạm Thúy Vi</h1>
-            <p class="text-pink-400 font-semibold mb-6">(Bé Đậu đáng yêu 💖)</p>
+            <h1 class="text-4xl font-bold text-pink-600 mb-2 font-['Quicksand']">Gửi Phạm Thúy Vi</h1>
+            <p class="text-pink-400 font-bold mb-8 text-xl tracking-wide">~ Bé Đậu đáng yêu nhất hệ mặt trời ~</p>
 
-            <div class="bg-pink-50 rounded-xl p-4 mb-6 text-gray-700 text-sm leading-relaxed text-left border border-pink-100">
-                <p class="mb-2"><strong>Bé Đậu ơi,</strong></p>
-                <p class="mb-2">Anh biết anh đã làm em buồn và anh thực sự hối hận lắm. Anh không cố ý làm tổn thương "cục vàng" của anh đâu.</p>
-                <p>Đừng giận anh nữa nhé? Thiếu nụ cười của em, thế giới của anh cứ như mất đi màu hồng vậy đó. Tha lỗi cho anh nhaaa! 🥺</p>
+            <!-- Lời nhắn dài hơn -->
+            <div class="bg-pink-50/60 rounded-3xl p-8 mb-8 text-gray-700 text-base md:text-lg leading-loose text-justify border border-pink-100 shadow-inner h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-transparent">
+                <p class="mb-4 font-bold text-pink-500 text-xl text-center">💌 Tâm thư gửi vợ yêu,</p>
+                
+                <p class="mb-4 indent-4">
+                    Bé Đậu ơi, anh ngồi đây viết những dòng này trong lúc trời đang âm u, cũng giống như tâm trạng anh lúc này khi biết mình lỡ làm em buồn. Anh tệ quá phải không? 🥺
+                </p>
+                
+                <p class="mb-4 indent-4">
+                    Anh biết lời xin lỗi đôi khi nói ra thì dễ, nhưng để làm em hết buồn thì cần sự chân thành. Anh hứa với em, đây là lần cuối anh ngốc nghếch như vậy. Thiếu nụ cười của em, ly trà sữa anh uống cũng nhạt thếch, phim hài anh xem cũng chẳng thấy vui tẹo nào.
+                </p>
+
+                <p class="mb-4 indent-4">
+                    Em là "hạt đậu nhỏ" nhưng lại gieo mầm hạnh phúc to đùng trong tim anh. Đừng giận anh nữa nhé? Anh đã chuẩn bị sẵn "cái bụng đói" để đưa em đi ăn sập cả thành phố rồi nè. Chỉ cần em gật đầu một cái thôi là anh bay qua liền! 🚀
+                </p>
+
+                <p class="mb-4 indent-4">
+                    Hãy cho anh cơ hội để chuộc lỗi nha. Anh hứa sẽ ngoan, sẽ nghe lời, sẽ yêu chiều Bé Đậu hơn gấp trăm lần luôn.
+                </p>
+
+                <p class="text-center font-bold text-pink-500 mt-6">
+                    Tha thứ cho anh nha? Yêu em nhiều lắm lắm! ❤️<br>
+                    <span class="text-sm font-normal text-gray-500">(Ký tên: Người yêu đang hối lỗi)</span>
+                </p>
             </div>
 
             <!-- Khu vực nút bấm -->
-            <div class="space-y-4">
-                <p class="text-gray-600 font-medium mb-4">Em có tha lỗi cho anh hông?</p>
+            <div class="space-y-6 relative min-h-[100px]"> 
+                <p class="text-gray-600 font-medium text-xl animate-pulse">Em có chịu tha lỗi cho anh hông?</p>
                 
-                <div class="flex justify-center gap-4 relative h-16 items-start">
+                <div class="flex justify-center gap-6 items-center">
                     <!-- Nút Đồng Ý -->
-                    <button onclick="acceptApology()" class="bg-gradient-to-r from-pink-400 to-pink-500 hover:from-pink-500 hover:to-pink-600 text-white font-bold py-2 px-8 rounded-full shadow-lg transform transition hover:scale-110 active:scale-95 z-20">
-                        Dạ có ❤️
+                    <button id="btnYes" onclick="acceptApology()" class="bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600 text-white font-bold py-4 px-12 rounded-full shadow-xl transform transition-all duration-300 z-20 flex items-center gap-3 text-lg whitespace-nowrap ring-4 ring-pink-100 hover:ring-pink-200">
+                        <span>Dạ có, tha cho đó</span> <span class="heart-beat text-2xl">❤️</span>
                     </button>
 
                     <!-- Nút Không (Sẽ chạy trốn) -->
-                    <button id="btnNo" onmouseover="moveButton()" onclick="moveButton()" ontouchstart="moveButton()" class="bg-white text-gray-500 border border-gray-200 font-semibold py-2 px-6 rounded-full shadow hover:bg-gray-50 text-sm z-10">
+                    <button id="btnNo" onmouseover="moveButton()" onclick="moveButton()" ontouchstart="moveButton()" class="bg-white text-gray-400 border-2 border-gray-200 font-semibold py-3 px-8 rounded-full shadow-sm hover:bg-gray-50 text-sm z-30 transition-all duration-100 absolute" style="position: relative;">
                         Không bao giờ
                     </button>
                 </div>
             </div>
         </div>
         
-        <p class="text-center text-pink-300 text-xs mt-6 opacity-80">Made with ❤️ for Bé Đậu</p>
+        <p class="text-center text-pink-300 text-sm mt-8 opacity-80 font-medium">Made with all my ❤️ for Bé Đậu</p>
     </div>
 
-    <!-- Màn hình chúc mừng khi đồng ý -->
-    <div id="successModal" class="fixed inset-0 bg-pink-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center">
-        <div class="bg-white rounded-3xl p-8 max-w-sm w-[90%] text-center shadow-2xl transform scale-0 transition-transform duration-500 border-4 border-pink-200" id="modalContent">
-            <div class="text-6xl mb-4 heart-beat">🥰</div>
-            <h2 class="text-2xl font-bold text-pink-600 mb-3">Yêu Bé Đậu Nhất!</h2>
-            <p class="text-gray-600 mb-6">Cảm ơn em đã bao dung cho anh. Anh hứa sẽ ngoan hơn. Tối nay anh đền bù nhé!</p>
-            <div class="flex justify-center gap-2 text-4xl">
-                <span>🌱</span><span>🌸</span><span>💖</span>
+    <!-- Màn hình chúc mừng -->
+    <div id="successModal" class="fixed inset-0 bg-pink-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-[3rem] p-10 max-w-md w-[90%] text-center shadow-2xl transform scale-0 transition-transform duration-500 border-8 border-pink-100 relative overflow-hidden" id="modalContent">
+            <!-- Background hoa văn -->
+            <div class="absolute inset-0 opacity-20 pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/heart-necklace.png')]"></div>
+            
+            <div class="text-8xl mb-6 heart-beat relative z-10 drop-shadow-lg">🥰</div>
+            <h2 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-600 mb-4 relative z-10">Yêu Vợ Nhất!</h2>
+            <p class="text-gray-600 mb-8 relative z-10 text-xl leading-relaxed">Yeahhh! Cảm ơn cục vàng đã tha lỗi. <br> Anh Cún Cường yêu Đậu, cảm ơn Đậu nhiều, sau này ak hứa sẽ sửa sai và yêu em hơn hơn nữa, I LOVE YOU 3000</p>
+            
+            <div class="flex justify-center gap-6 text-5xl relative z-10">
+                <span class="animate-bounce" style="animation-delay: 0s">🌱</span>
+                <span class="animate-bounce" style="animation-delay: 0.1s">🥤</span>
+                <span class="animate-bounce" style="animation-delay: 0.2s">🍕</span>
+                <span class="animate-bounce" style="animation-delay: 0.3s">💖</span>
             </div>
-            <button onclick="location.reload()" class="mt-8 text-sm text-pink-400 hover:text-pink-600 underline">
-                Xem lại lần nữa
-            </button>
         </div>
     </div>
 
     <script>
-        // Tạo hiệu ứng nền (Tim và Đậu bay bay)
+        // --- XỬ LÝ NHẠC TỰ ĐỘNG (Auto-play workaround) ---
+        const bgMusic = document.getElementById('bgMusic');
+        const musicBtn = document.getElementById('musicBtn');
+        let isMusicPlaying = false;
+
+        function playAudio() {
+            if (!isMusicPlaying) {
+                bgMusic.play().then(() => {
+                    isMusicPlaying = true;
+                    updateMusicIcon();
+                    // Xóa các event listener sau khi đã bật được nhạc
+                    document.removeEventListener('click', playAudio);
+                    document.removeEventListener('mousemove', playAudio);
+                    document.removeEventListener('touchstart', playAudio);
+                    document.removeEventListener('scroll', playAudio);
+                }).catch(e => {
+                    console.log("Chờ tương tác người dùng...");
+                });
+            }
+        }
+
+        function manualToggleMusic() {
+            if (isMusicPlaying) {
+                bgMusic.pause();
+                isMusicPlaying = false;
+            } else {
+                bgMusic.play();
+                isMusicPlaying = true;
+            }
+            updateMusicIcon();
+        }
+
+        function updateMusicIcon() {
+            const musicIcon = document.getElementById('musicIcon');
+            if (isMusicPlaying) {
+                musicIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>'; 
+                musicIcon.classList.add('text-pink-600');
+                musicBtn.classList.add('music-spin');
+            } else {
+                musicIcon.innerHTML = '<path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle>';
+                musicIcon.classList.remove('text-pink-600');
+                musicBtn.classList.remove('music-spin');
+            }
+        }
+
+        // Thêm event listener vào toàn bộ document để bắt mọi tương tác
+        document.addEventListener('click', playAudio);
+        document.addEventListener('mousemove', playAudio);
+        document.addEventListener('touchstart', playAudio);
+        document.addEventListener('scroll', playAudio);
+
+
+        // --- HIỆU ỨNG NỀN ---
         function createFloatingElements() {
             const container = document.getElementById('background-effects');
-            const icons = ['❤️', '🌱', '🌸', '✨', '🥺', '🫘']; // Tim, mầm cây (đậu), hoa, đậu
-            const count = 25; // Số lượng icon
-
+            const icons = ['❤️', '🌱', '🌸', '✨', '🥺', '🫘', '💌', '🍬']; 
+            const count = 40; 
             for (let i = 0; i < count; i++) {
                 const el = document.createElement('div');
                 el.classList.add('floating-icon');
                 el.textContent = icons[Math.floor(Math.random() * icons.length)];
-                
-                // Random vị trí và kích thước
                 el.style.left = Math.random() * 100 + 'vw';
-                el.style.fontSize = (Math.random() * 20 + 10) + 'px';
-                el.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                el.style.animationDelay = (Math.random() * 5) + 's';
-                
+                el.style.fontSize = (Math.random() * 25 + 15) + 'px';
+                el.style.animationDuration = (Math.random() * 10 + 15) + 's';
+                el.style.animationDelay = (Math.random() * 10) + 's';
                 container.appendChild(el);
             }
         }
 
-        // Logic nút "Không" chạy trốn
+        // --- LOGIC NÚT CHẠY TRỐN SIÊU CẤP ---
+        let hoverCount = 0;
+        const btnNo = document.getElementById('btnNo');
+        const btnYes = document.getElementById('btnYes');
+        const avatarContainer = document.getElementById('avatar-container');
+        const speechBubble = document.getElementById('speech-bubble');
+
         function moveButton() {
-            const btn = document.getElementById('btnNo');
+            hoverCount++;
+
+            // 1. Phóng to nút YES quyết liệt hơn
+            const currentScale = 1 + (hoverCount * 0.3); // Tăng nhanh hơn
+            btnYes.style.transform = `scale(${currentScale})`;
+            
+            // Nếu nút Yes to quá thì cho nó full màn hình luôn
+            if(hoverCount > 8) {
+                btnYes.style.width = '100vw';
+                btnYes.style.height = '100vh';
+                btnYes.style.position = 'fixed';
+                btnYes.style.top = '0';
+                btnYes.style.left = '0';
+                btnYes.style.zIndex = '100';
+                btnYes.style.borderRadius = '0';
+                btnYes.innerHTML = '<span class="text-4xl">Đồng ý đi mừ!!! ❤️</span>';
+                btnNo.style.display = 'none'; // Ẩn luôn nút No
+                return;
+            }
+
+            // 2. Di chuyển nút NO
             const containerWidth = window.innerWidth;
             const containerHeight = window.innerHeight;
             
-            // Tính toán vị trí mới ngẫu nhiên nhưng nằm trong vùng an toàn để không bị khuất quá
-            // Giới hạn trong khoảng +/- 150px từ vị trí hiện tại hoặc random trong màn hình
-            // Cách đơn giản nhất: Random vị trí fixed
+            // Tính toán vùng an toàn để nút không bị khuất
+            const buttonWidth = btnNo.offsetWidth;
+            const buttonHeight = btnNo.offsetHeight;
             
-            // Set position to fixed to move freely
-            btn.style.position = 'fixed';
-            
-            const newX = Math.random() * (containerWidth - 100);
-            const newY = Math.random() * (containerHeight - 50);
+            const newX = Math.random() * (containerWidth - buttonWidth - 40) + 20;
+            const newY = Math.random() * (containerHeight - buttonHeight - 40) + 20;
 
-            btn.style.left = newX + 'px';
-            btn.style.top = newY + 'px';
+            btnNo.style.position = 'fixed';
+            btnNo.style.left = newX + 'px';
+            btnNo.style.top = newY + 'px';
             
-            // Thay đổi nội dung nút cho vui
-            const texts = ["Đừng mà 🥺", "Thương anh đi", "Bấm nút kia kìa 👉", "Lỗi tại anh", "Huhu 😭"];
-            btn.innerText = texts[Math.floor(Math.random() * texts.length)];
-            btn.style.backgroundColor = "#fee2e2"; // Đổi màu nhẹ cảnh báo
+            // 3. Đổi chữ và màu sắc để khiêu khích
+            const btnTexts = [
+                "Đừng mà 🥺", "Hong bé ơi!", "Bấm nút kia kìa", 
+                "Lêu lêu 😝", "Sai rùiii", "Hụt rồi nha!", 
+                "Tay chậm quá :P", "Cố lên!", "Ứ ừ...", 
+                "Thương tui đi 😭"
+            ];
+            btnNo.innerText = btnTexts[Math.floor(Math.random() * btnTexts.length)];
+            btnNo.style.backgroundColor = hoverCount % 2 === 0 ? "#fee2e2" : "#fff"; 
+            
+            // 4. Bong bóng chat
+            const bubbleTexts = [
+                "Aaaa đừng bấm đó! 😫", "Nút hồng bự chà bá kìa! 👉", 
+                "Anh xin lỗi màaa 🥺", "Vợ đẹp nhất trần gian!", 
+                "Đừng dỗi nữaaa!", "Bắt được em đi! 😝", 
+                "Cứu tui với!", "Năn nỉ á!", "Yêu em nhứt!"
+            ];
+            speechBubble.innerText = bubbleTexts[Math.floor(Math.random() * bubbleTexts.length)];
+            speechBubble.style.opacity = '1';
+
+            // 5. Rung Avatar
+            avatarContainer.classList.add('shake');
+            setTimeout(() => {
+                avatarContainer.classList.remove('shake');
+            }, 500);
+
+            // 6. Thả icon
+            spawnFloatingEmoji(newX, newY);
         }
 
-        // Xử lý khi đồng ý
+        function spawnFloatingEmoji(x, y) {
+            const el = document.createElement('div');
+            const emojis = ['😭', '🥺', '💔', '😝', '🤪', '💨', '💢'];
+            el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+            el.style.position = 'fixed';
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            el.style.fontSize = '24px';
+            el.style.pointerEvents = 'none';
+            el.style.transition = 'all 1s ease-out';
+            el.style.zIndex = '100';
+            document.body.appendChild(el);
+
+            setTimeout(() => {
+                el.style.transform = 'translateY(-100px) scale(1.5)';
+                el.style.opacity = '0';
+            }, 50);
+            setTimeout(() => el.remove(), 1000);
+        }
+        
+        // Thả tim khi click vào avatar
+        function spawnHearts(event) {
+             const el = document.createElement('div');
+             el.textContent = '❤️';
+             el.style.position = 'absolute';
+             el.style.left = event.clientX + 'px';
+             el.style.top = event.clientY + 'px';
+             el.style.fontSize = '30px';
+             el.style.pointerEvents = 'none';
+             el.style.transition = 'all 0.8s ease-out';
+             el.style.zIndex = '100';
+             document.body.appendChild(el);
+             
+             setTimeout(() => {
+                 el.style.transform = 'translateY(-100px) scale(1.5)';
+                 el.style.opacity = '0';
+             }, 50);
+             setTimeout(() => el.remove(), 1000);
+        }
+
         function acceptApology() {
             const modal = document.getElementById('successModal');
             const modalContent = document.getElementById('modalContent');
             
             modal.classList.remove('hidden');
             
-            // Một chút delay để animation mượt mà
+            // Đảm bảo nhạc bật
+            if(!isMusicPlaying) {
+                bgMusic.play();
+                isMusicPlaying = true;
+                updateMusicIcon();
+            }
+
             setTimeout(() => {
                 modalContent.classList.remove('scale-0');
                 modalContent.classList.add('scale-100');
             }, 10);
 
-            // Bắn pháo hoa giấy (confetti) đơn giản bằng cách tạo thêm nhiều tim rơi nhanh
             spawnConfetti();
         }
 
         function spawnConfetti() {
             const container = document.getElementById('background-effects');
-            for(let i=0; i<50; i++) {
+            for(let i=0; i<150; i++) {
                 const el = document.createElement('div');
-                el.textContent = '💗';
+                el.textContent = Math.random() > 0.5 ? '❤️' : '🎉';
                 el.style.position = 'fixed';
                 el.style.left = Math.random() * 100 + 'vw';
                 el.style.top = '-50px';
-                el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                el.style.fontSize = (Math.random() * 30 + 10) + 'px';
                 el.style.zIndex = '100';
-                el.style.transition = `top ${Math.random() * 2 + 1}s ease-in, opacity 1s`;
-                
+                el.style.transition = `top ${Math.random() * 3 + 2}s ease-in, opacity 1s, transform 2s`;
+                el.style.transform = `rotate(${Math.random() * 360}deg)`;
                 container.appendChild(el);
-
                 setTimeout(() => {
                     el.style.top = '110vh';
+                    el.style.opacity = '0';
                 }, 100);
             }
         }
 
-        // Khởi tạo
         createFloatingElements();
     </script>
 </body>

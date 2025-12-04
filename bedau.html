@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gửi Bé Đậu - Phạm Thúy Vi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Quicksand', sans-serif;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #fff0f5 0%, #fff 100%);
+        }
+
+        /* Hiệu ứng trôi nổi cho các icon nền */
+        .floating-icon {
+            position: absolute;
+            opacity: 0.6;
+            animation: floatUp 15s linear infinite;
+            z-index: 0;
+            user-select: none;
+            pointer-events: none;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.7; }
+            90% { opacity: 0.7; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        /* Animation cho modal tim đập */
+        .heart-beat {
+            animation: heartbeat 1.2s infinite;
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); }
+            15% { transform: scale(1.15); }
+            30% { transform: scale(1); }
+            45% { transform: scale(1.15); }
+            60% { transform: scale(1); }
+        }
+
+        /* Hiệu ứng xuất hiện */
+        .fade-in-up {
+            animation: fadeInUp 1s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        @keyframes fadeInUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Nút chạy trốn */
+        #btnNo {
+            transition: all 0.2s ease;
+            position: relative; 
+        }
+
+        .envelope-container {
+            perspective: 1000px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center relative">
+
+    <!-- Container hiệu ứng nền (Trái tim và Đậu) -->
+    <div id="background-effects" class="fixed inset-0 pointer-events-none overflow-hidden"></div>
+
+    <!-- Nội dung chính -->
+    <div class="relative z-10 w-full max-w-md p-4">
+        
+        <!-- Card Chính -->
+        <div class="bg-white/80 backdrop-blur-md border-2 border-pink-100 rounded-3xl shadow-2xl p-8 text-center fade-in-up transform hover:scale-[1.01] transition-transform duration-300">
+            
+            <!-- Avatar / Icon cute -->
+            <div class="w-32 h-32 mx-auto mb-4 bg-pink-100 rounded-full flex items-center justify-center shadow-inner overflow-hidden border-4 border-white">
+                <!-- 
+                     Mình đã để tạm ảnh hoạt hình cute. 
+                     Nếu bạn có link ảnh mới từ imgbb.com, hãy thay vào trong src="..." nhé.
+                     Đoạn onerror giúp nếu ảnh lỗi thì nó sẽ tự hiện ảnh dự phòng chứ không bị trắng trơn.
+                -->
+                <img 
+                    src="https://ibb.co/Q3vcfd8q" 
+                    onerror="this.src='https://ibb.co/Q3vcfd8q'"
+                    alt="Ảnh Bé Đậu" 
+                    class="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                >
+            </div>
+
+            <h1 class="text-3xl font-bold text-pink-600 mb-2">Gửi Phạm Thúy Vi</h1>
+            <p class="text-pink-400 font-semibold mb-6">(Bé Đậu đáng yêu 💖)</p>
+
+            <div class="bg-pink-50 rounded-xl p-4 mb-6 text-gray-700 text-sm leading-relaxed text-left border border-pink-100">
+                <p class="mb-2"><strong>Bé Đậu ơi,</strong></p>
+                <p class="mb-2">Anh biết anh đã làm em buồn và anh thực sự hối hận lắm. Anh không cố ý làm tổn thương "cục vàng" của anh đâu.</p>
+                <p>Đừng giận anh nữa nhé? Thiếu nụ cười của em, thế giới của anh cứ như mất đi màu hồng vậy đó. Tha lỗi cho anh nhaaa! 🥺</p>
+            </div>
+
+            <!-- Khu vực nút bấm -->
+            <div class="space-y-4">
+                <p class="text-gray-600 font-medium mb-4">Em có tha lỗi cho anh hông?</p>
+                
+                <div class="flex justify-center gap-4 relative h-16 items-start">
+                    <!-- Nút Đồng Ý -->
+                    <button onclick="acceptApology()" class="bg-gradient-to-r from-pink-400 to-pink-500 hover:from-pink-500 hover:to-pink-600 text-white font-bold py-2 px-8 rounded-full shadow-lg transform transition hover:scale-110 active:scale-95 z-20">
+                        Dạ có ❤️
+                    </button>
+
+                    <!-- Nút Không (Sẽ chạy trốn) -->
+                    <button id="btnNo" onmouseover="moveButton()" onclick="moveButton()" ontouchstart="moveButton()" class="bg-white text-gray-500 border border-gray-200 font-semibold py-2 px-6 rounded-full shadow hover:bg-gray-50 text-sm z-10">
+                        Không bao giờ
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <p class="text-center text-pink-300 text-xs mt-6 opacity-80">Made with ❤️ for Bé Đậu</p>
+    </div>
+
+    <!-- Màn hình chúc mừng khi đồng ý -->
+    <div id="successModal" class="fixed inset-0 bg-pink-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-[90%] text-center shadow-2xl transform scale-0 transition-transform duration-500 border-4 border-pink-200" id="modalContent">
+            <div class="text-6xl mb-4 heart-beat">🥰</div>
+            <h2 class="text-2xl font-bold text-pink-600 mb-3">Yêu Bé Đậu Nhất!</h2>
+            <p class="text-gray-600 mb-6">Cảm ơn em đã bao dung cho anh. Anh hứa sẽ ngoan hơn. Tối nay anh đền bù nhé!</p>
+            <div class="flex justify-center gap-2 text-4xl">
+                <span>🌱</span><span>🌸</span><span>💖</span>
+            </div>
+            <button onclick="location.reload()" class="mt-8 text-sm text-pink-400 hover:text-pink-600 underline">
+                Xem lại lần nữa
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Tạo hiệu ứng nền (Tim và Đậu bay bay)
+        function createFloatingElements() {
+            const container = document.getElementById('background-effects');
+            const icons = ['❤️', '🌱', '🌸', '✨', '🥺', '🫘']; // Tim, mầm cây (đậu), hoa, đậu
+            const count = 25; // Số lượng icon
+
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.classList.add('floating-icon');
+                el.textContent = icons[Math.floor(Math.random() * icons.length)];
+                
+                // Random vị trí và kích thước
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                el.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                el.style.animationDelay = (Math.random() * 5) + 's';
+                
+                container.appendChild(el);
+            }
+        }
+
+        // Logic nút "Không" chạy trốn
+        function moveButton() {
+            const btn = document.getElementById('btnNo');
+            const containerWidth = window.innerWidth;
+            const containerHeight = window.innerHeight;
+            
+            // Tính toán vị trí mới ngẫu nhiên nhưng nằm trong vùng an toàn để không bị khuất quá
+            // Giới hạn trong khoảng +/- 150px từ vị trí hiện tại hoặc random trong màn hình
+            // Cách đơn giản nhất: Random vị trí fixed
+            
+            // Set position to fixed to move freely
+            btn.style.position = 'fixed';
+            
+            const newX = Math.random() * (containerWidth - 100);
+            const newY = Math.random() * (containerHeight - 50);
+
+            btn.style.left = newX + 'px';
+            btn.style.top = newY + 'px';
+            
+            // Thay đổi nội dung nút cho vui
+            const texts = ["Đừng mà 🥺", "Thương anh đi", "Bấm nút kia kìa 👉", "Lỗi tại anh", "Huhu 😭"];
+            btn.innerText = texts[Math.floor(Math.random() * texts.length)];
+            btn.style.backgroundColor = "#fee2e2"; // Đổi màu nhẹ cảnh báo
+        }
+
+        // Xử lý khi đồng ý
+        function acceptApology() {
+            const modal = document.getElementById('successModal');
+            const modalContent = document.getElementById('modalContent');
+            
+            modal.classList.remove('hidden');
+            
+            // Một chút delay để animation mượt mà
+            setTimeout(() => {
+                modalContent.classList.remove('scale-0');
+                modalContent.classList.add('scale-100');
+            }, 10);
+
+            // Bắn pháo hoa giấy (confetti) đơn giản bằng cách tạo thêm nhiều tim rơi nhanh
+            spawnConfetti();
+        }
+
+        function spawnConfetti() {
+            const container = document.getElementById('background-effects');
+            for(let i=0; i<50; i++) {
+                const el = document.createElement('div');
+                el.textContent = '💗';
+                el.style.position = 'fixed';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.top = '-50px';
+                el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+                el.style.zIndex = '100';
+                el.style.transition = `top ${Math.random() * 2 + 1}s ease-in, opacity 1s`;
+                
+                container.appendChild(el);
+
+                setTimeout(() => {
+                    el.style.top = '110vh';
+                }, 100);
+            }
+        }
+
+        // Khởi tạo
+        createFloatingElements();
+    </script>
+</body>
+</html>
